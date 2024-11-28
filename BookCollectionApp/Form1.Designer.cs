@@ -23,7 +23,7 @@ namespace BookCollectionApp
         private System.Windows.Forms.Button btnSearchByTitle;
         private System.Windows.Forms.Button btnSearchByAuthor;
         private System.Windows.Forms.Button btnShowAllBooks;
-        private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.Button btnImport;
 
         private System.Windows.Forms.DataGridView dataGridBooks;
         /// <summary>
@@ -58,8 +58,11 @@ namespace BookCollectionApp
             this.btnSearchByTitle = new System.Windows.Forms.Button();
             this.btnSearchByAuthor = new System.Windows.Forms.Button();
             this.btnShowAllBooks = new System.Windows.Forms.Button();
-            this.button6 = new System.Windows.Forms.Button();
+            this.btnImport = new System.Windows.Forms.Button();
             this.dataGridBooks = new System.Windows.Forms.DataGridView();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridBooks)).BeginInit();
             this.SuspendLayout();
             // 
@@ -161,14 +164,15 @@ namespace BookCollectionApp
             this.btnShowAllBooks.UseVisualStyleBackColor = true;
             this.btnShowAllBooks.Click += new System.EventHandler(this.btnShowAllBooks_Click);
             // 
-            // button6
+            // btnImport
             // 
-            this.button6.Location = new System.Drawing.Point(274, 87);
-            this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(103, 20);
-            this.button6.TabIndex = 11;
-            this.button6.Text = "Кнопка";
-            this.button6.UseVisualStyleBackColor = true;
+            this.btnImport.Location = new System.Drawing.Point(274, 87);
+            this.btnImport.Name = "btnImport";
+            this.btnImport.Size = new System.Drawing.Size(103, 20);
+            this.btnImport.TabIndex = 11;
+            this.btnImport.Text = "Импорт";
+            this.btnImport.UseVisualStyleBackColor = true;
+            this.btnImport.Click += new System.EventHandler(this.btnImportBooks_Click);
             // 
             // dataGridBooks
             // 
@@ -183,11 +187,44 @@ namespace BookCollectionApp
             this.dataGridBooks.Size = new System.Drawing.Size(605, 217);
             this.dataGridBooks.TabIndex = 12;
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(519, 17);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(103, 20);
+            this.button1.TabIndex = 13;
+            this.button1.Text = "Экспорт";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.btnExportBooks_Click);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(519, 52);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(103, 20);
+            this.button2.TabIndex = 14;
+            this.button2.Text = "Открыть книгу";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.btnDownloadBook_Click);
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(519, 87);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(103, 20);
+            this.button3.TabIndex = 15;
+            this.button3.Text = "Открыть книгу";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.btnConvert_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(634, 364);
+            this.Controls.Add(this.button3);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.lblTitle);
             this.Controls.Add(this.txtTitle);
             this.Controls.Add(this.lblAuthor);
@@ -199,7 +236,7 @@ namespace BookCollectionApp
             this.Controls.Add(this.btnSearchByTitle);
             this.Controls.Add(this.btnSearchByAuthor);
             this.Controls.Add(this.btnShowAllBooks);
-            this.Controls.Add(this.button6);
+            this.Controls.Add(this.btnImport);
             this.Controls.Add(this.dataGridBooks);
             this.Name = "Form1";
             this.Text = "Book Collection Manager";
@@ -208,6 +245,10 @@ namespace BookCollectionApp
             this.PerformLayout();
 
         }
+
+        private Button button1;
+        private Button button2;
+        private Button button3;
     }
 }
 

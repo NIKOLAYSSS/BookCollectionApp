@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
+using System.IO;
 
 namespace BookCollectionApp
 {
@@ -12,12 +14,52 @@ namespace BookCollectionApp
         private readonly List<Book> books = new List<Book>();
 
         // Метод для добавления новой книги в коллекцию.
-        public void AddBook(string title, string author, int year)
+        // Добавление новой книги
+        public void AddBook(string title, string author, int year, string filePath = "")
         {
-            // Создание новой книги с переданными параметрами.
-            var book = new Book(title, author, year);
-            // Добавление книги в коллекцию.
+            var book = new Book(title, author, year, filePath);
             books.Add(book);
+        }
+
+        // Импорт книг из JSON-файла.
+        public void ImportBooksFromFile(string filePath)
+        {
+            if (File.Exists(filePath))
+            {
+                string json = File.ReadAllText(filePath);
+                var importedBooks = JsonSerializer.Deserialize<List<Book>>(json);
+                if (importedBooks != null)
+                {
+                    books.AddRange(importedBooks);
+                }
+            }
+        }
+
+        // Экспорт книг в JSON-файл.
+        public void ExportBooksToFile(string filePath)
+        {
+            // Обновляем путь к файлу для каждой книги перед экспортом
+            foreach (var book in books)
+            {
+                if (string.IsNullOrEmpty(book.FilePath))  // Если путь не установлен
+                {
+                    book.FilePath = filePath;  // Используем путь сохранения файла как путь книги
+                }
+            }
+            string json = JsonSerializer.Serialize(books, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(filePath, json);
+        }
+
+        // Импорт из другой коллекции книг.
+        public void ImportBooksFromCollection(IEnumerable<Book> otherBooks)
+        {
+            books.AddRange(otherBooks);
+        }
+
+        // Экспорт в другую коллекцию книг.
+        public List<Book> ExportBooksToCollection()
+        {
+            return new List<Book>(books);
         }
 
         // Метод для удаления книги из коллекции по уникальному идентификатору.
