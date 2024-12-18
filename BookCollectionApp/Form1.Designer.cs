@@ -62,7 +62,7 @@ namespace BookCollectionApp
             this.dataGridBooks = new System.Windows.Forms.DataGridView();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
+            this.btnConvert = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridBooks)).BeginInit();
             this.SuspendLayout();
             // 
@@ -184,6 +184,7 @@ namespace BookCollectionApp
             this.dataGridBooks.Name = "dataGridBooks";
             this.dataGridBooks.ReadOnly = true;
             this.dataGridBooks.RowHeadersVisible = false;
+            this.dataGridBooks.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dataGridBooks.Size = new System.Drawing.Size(605, 217);
             this.dataGridBooks.TabIndex = 12;
             // 
@@ -205,24 +206,23 @@ namespace BookCollectionApp
             this.button2.TabIndex = 14;
             this.button2.Text = "Открыть книгу";
             this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.btnDownloadBook_Click);
             // 
-            // button3
+            // btnConvert
             // 
-            this.button3.Location = new System.Drawing.Point(519, 87);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(103, 20);
-            this.button3.TabIndex = 15;
-            this.button3.Text = "Открыть книгу";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.btnConvert_Click);
+            this.btnConvert.Location = new System.Drawing.Point(519, 87);
+            this.btnConvert.Name = "btnConvert";
+            this.btnConvert.Size = new System.Drawing.Size(103, 20);
+            this.btnConvert.TabIndex = 16;
+            this.btnConvert.Text = "конвертировать";
+            this.btnConvert.UseVisualStyleBackColor = true;
+            this.btnConvert.Click += new System.EventHandler(this.btnConvertBook_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(634, 364);
-            this.Controls.Add(this.button3);
+            this.ClientSize = new System.Drawing.Size(641, 364);
+            this.Controls.Add(this.btnConvert);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.lblTitle);
@@ -248,7 +248,7 @@ namespace BookCollectionApp
 
         private Button button1;
         private Button button2;
-        private Button button3;
+        private Button btnConvert;
     }
 }
 

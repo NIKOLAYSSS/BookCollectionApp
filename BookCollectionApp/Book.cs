@@ -1,28 +1,20 @@
 ﻿using System;
-using System.IO;
+using Newtonsoft.Json;
 
-public class Book
+namespace BookCollectionApp
 {
-    public Guid Id { get; private set; }
-    public string Title { get; set; }
-    public string Author { get; set; }
-    public int Year { get; set; }
-    public string FilePath { get; set; } // Путь к файлу книги.
-
-
-
-    public Book(string title, string author, int year, string filePath)
+    public class Book
     {
-        Id = Guid.NewGuid();
-        Title = title;
-        Author = author;
-        Year = year;
-        FilePath = filePath;
-    }
+        public Guid Id { get; set; }
+        public string Title { get; set; }
+        public string Author { get; set; }
+        public int Year { get; set; }
 
-    public override string ToString()
-    {
-        return $"Id: {Id}; Название: {Title}; Автор: {Author}; Год издания: {Year}";
-    }
+        // Поле для хранения файла в виде массива байтов
+        public byte[] FileData { get; set; }
 
+        // Добавляем свойство для хранения строкового представления файла (Base64)
+        [JsonIgnore] // Не сериализуется в JSON напрямую
+        public string FileDataString { get; set; }
+    }
 }
