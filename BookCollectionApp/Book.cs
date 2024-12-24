@@ -13,8 +13,6 @@ namespace BookCollectionApp
         // Поле для хранения файла в виде массива байтов
         public byte[] FileData { get; set; }
 
-        // Добавляем свойство для хранения строкового представления файла (Base64)
-        [JsonIgnore] // Не сериализуется в JSON напрямую
-        public string FileDataString { get; set; }
+
     }
 }

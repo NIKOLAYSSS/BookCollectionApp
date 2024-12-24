@@ -4,9 +4,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json;
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
-using Google.Cloud.Firestore;
+
+
 using System.Collections.Generic;
 using Npgsql;
 using BCrypt.Net;
@@ -15,13 +14,18 @@ namespace BookCollectionApp
 {
     public partial class LoginForm : Form
     {
-        private string connectionString = "Host=localhost;Username=postgres;Password=1337;Database=bookmanager_db;";
+        private DatabaseManager _databaseManager;
+        private BookManager _bookManager;
+        private string _currentUserRole;
 
         public LoginForm()
         {
+            _databaseManager = new DatabaseManager();
+            _bookManager = new BookManager(_databaseManager);
             InitializeComponent();
         }
 
+        // Обработчик кнопки регистрации
         private void btnRegister_Click(object sender, EventArgs e)
         {
             string username = txtUsername.Text;
@@ -35,24 +39,12 @@ namespace BookCollectionApp
 
             try
             {
-                using (var connection = new NpgsqlConnection(connectionString))
-                {
-                    connection.Open();
+                // Хэшируем пароль
+                string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-                    // Хэшируем пароль
-                    string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
-
-                    // Вставляем пользователя в БД
-                    string query = "INSERT INTO users (username, password_hash) VALUES (@username, @passwordHash)";
-                    using (var command = new NpgsqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("username", username);
-                        command.Parameters.AddWithValue("passwordHash", passwordHash);
-                        command.ExecuteNonQuery();
-
-                        MessageBox.Show("Регистрация успешна!");
-                    }
-                }
+                // Регистрируем пользователя через DatabaseManager
+                _databaseManager.RegisterUser(username, passwordHash);
+                MessageBox.Show("Регистрация успешна!");
             }
             catch (PostgresException ex) when (ex.SqlState == "23505") // Проверка уникальности имени
             {
@@ -63,6 +55,7 @@ namespace BookCollectionApp
                 MessageBox.Show($"Ошибка: {ex.Message}");
             }
         }
+        // Обработчик кнопки входа
         // Обработчик кнопки входа
         private void btnLogin_Click(object sender, EventArgs e)
         {
@@ -77,39 +70,29 @@ namespace BookCollectionApp
 
             try
             {
-                using (var connection = new NpgsqlConnection(connectionString))
+                // Получаем хэш пароля через DatabaseManager
+                string storedHash = _databaseManager.GetPasswordHash(username);
+
+                if (!string.IsNullOrEmpty(storedHash))
                 {
-                    connection.Open();
-
-                    // Извлекаем хэш пароля из БД
-                    string query = "SELECT password_hash FROM users WHERE username = @username";
-                    using (var command = new NpgsqlCommand(query, connection))
+                    // Проверяем пароль
+                    if (BCrypt.Net.BCrypt.Verify(password, storedHash))
                     {
-                        command.Parameters.AddWithValue("username", username);
-                        var result = command.ExecuteScalar();
-
-                        if (result != null)
-                        {
-                            string storedHash = result.ToString();
-
-                            // Проверяем пароль
-                            if (BCrypt.Net.BCrypt.Verify(password, storedHash))
-                            {
-                                MessageBox.Show("Авторизация успешна!");
-                                Form1 mainForm = new Form1(); // Создаём объект главной формы
-                                mainForm.Show(); // Открываем главную форму
-                                this.Hide(); // Скрываем текущую форму (Form1)
-                            }
-                            else
-                            {
-                                MessageBox.Show("Неправильный пароль.");
-                            }
-                        }
-                        else
-                        {
-                            MessageBox.Show("Пользователь не найден.");
-                        }
+                        // Получаем роль пользователя
+                        _currentUserRole = _databaseManager.GetUserRole(username);
+                        MessageBox.Show($"Авторизация успешна! Ваша роль: {_currentUserRole}");
+                        Form1 mainForm = new Form1(_currentUserRole); // Создаём объект главной формы
+                        mainForm.Show(); // Открываем главную форму
+                        this.Hide(); // Скрываем текущую форму
                     }
+                    else
+                    {
+                        MessageBox.Show("Неправильный пароль.");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Пользователь не найден.");
                 }
             }
             catch (Exception ex)

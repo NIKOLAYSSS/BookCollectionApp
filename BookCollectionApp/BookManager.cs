@@ -8,12 +8,56 @@ using Aspose.Pdf;
 using Aspose.Words;
 using System.Linq;
 using System.Windows.Forms;
+using Aspose.Pdf.Operators;
+
 
 namespace BookCollectionApp
 {
     public class BookManager
     {
-        public static string connectionString = "Host=localhost;Username=postgres;Password=1337;Database=bookmanager_db;";
+        //public static string connectionString = "Host=195.46.187.72;Port=5432;Username=postgres;Password=1337;Database=bookmanager_db;";
+        private readonly DatabaseManager _databaseManager;
+        public BookManager(DatabaseManager databaseManager)
+        {
+            _databaseManager = databaseManager;
+        }
+        public BookManager()
+        {
+            _databaseManager = null;
+        }
+
+        public void AddBook(Book book)
+        {
+            //byte[] fileBytes = File.ReadAllBytes(filePath);
+            //Guid bookId = Guid.NewGuid();
+            _databaseManager.InsertBook(book);
+        }
+        // Метод для загрузки всех книг из базы данных
+        public List<Book> LoadBooks()
+        {
+            // Получаем данные через DatabaseManager
+            return _databaseManager.GetAllBooks();
+        }
+
+        public void RemoveBook(Book book)
+        {
+            _databaseManager.DeleteBook(book);
+        }
+
+        public List<Book> GetBooksByTitle(string title)
+        {
+            return _databaseManager.SearchBooksByTitle(title);
+        }
+
+        public List<Book> GetBooksByAuthor(string author)
+        {
+            return _databaseManager.SearchBooksByAuthor(author);
+        }
+
+        public bool BookExists(Guid bookId)
+        {
+            return _databaseManager.BookExists(bookId);
+        }
 
 
         public bool IsPdfFile(Book book)
@@ -61,37 +105,7 @@ namespace BookCollectionApp
 
             MessageBox.Show("Конвертация завершена!");
         }
-        public Book GetBookById(Guid bookId)
-        {
-            Book book = null;
-            string query = "SELECT id, title, author, year, file_data FROM books WHERE id = @id";
-
-            using (var connection = new NpgsqlConnection(connectionString))
-            {
-                connection.Open();
-                using (var command = new NpgsqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("id", bookId);
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            book = new Book
-                            {
-                                Id = reader.GetGuid(0),
-                                Title = reader.GetString(1),
-                                Author = reader.GetString(2),
-                                Year = reader.GetInt32(3),
-                                FileData = (byte[])reader["file_data"]
-                            };
-                        }
-                    }
-                }
-            }
-
-            return book;
-        }
+        
 
     }
 }

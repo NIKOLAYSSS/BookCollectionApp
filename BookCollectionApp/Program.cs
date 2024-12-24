@@ -14,7 +14,7 @@ namespace BookCollectionApp
         [STAThread]
         static void Main()
         {
-            // Инициализация Firestore
+        
            
 
             Application.EnableVisualStyles();

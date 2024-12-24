@@ -60,10 +60,12 @@ namespace BookCollectionApp
             this.btnShowAllBooks = new System.Windows.Forms.Button();
             this.btnImport = new System.Windows.Forms.Button();
             this.dataGridBooks = new System.Windows.Forms.DataGridView();
-            this.button1 = new System.Windows.Forms.Button();
+            this.btnExport = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.btnConvert = new System.Windows.Forms.Button();
+            this.pictureBoxQRCode = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridBooks)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQRCode)).BeginInit();
             this.SuspendLayout();
             // 
             // txtTitle
@@ -188,15 +190,15 @@ namespace BookCollectionApp
             this.dataGridBooks.Size = new System.Drawing.Size(605, 217);
             this.dataGridBooks.TabIndex = 12;
             // 
-            // button1
+            // btnExport
             // 
-            this.button1.Location = new System.Drawing.Point(519, 17);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(103, 20);
-            this.button1.TabIndex = 13;
-            this.button1.Text = "Экспорт";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.btnExportBooks_Click);
+            this.btnExport.Location = new System.Drawing.Point(519, 17);
+            this.btnExport.Name = "btnExport";
+            this.btnExport.Size = new System.Drawing.Size(103, 20);
+            this.btnExport.TabIndex = 13;
+            this.btnExport.Text = "Экспорт";
+            this.btnExport.UseVisualStyleBackColor = true;
+            this.btnExport.Click += new System.EventHandler(this.btnExportBooks_Click);
             // 
             // button2
             // 
@@ -204,8 +206,9 @@ namespace BookCollectionApp
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(103, 20);
             this.button2.TabIndex = 14;
-            this.button2.Text = "Открыть книгу";
+            this.button2.Text = "Сделать QR код";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.btnGenerateQRCode_Click);
             // 
             // btnConvert
             // 
@@ -217,14 +220,24 @@ namespace BookCollectionApp
             this.btnConvert.UseVisualStyleBackColor = true;
             this.btnConvert.Click += new System.EventHandler(this.btnConvertBook_Click);
             // 
+            // pictureBoxQRCode
+            // 
+            this.pictureBoxQRCode.Location = new System.Drawing.Point(628, 17);
+            this.pictureBoxQRCode.Name = "pictureBoxQRCode";
+            this.pictureBoxQRCode.Size = new System.Drawing.Size(202, 180);
+            this.pictureBoxQRCode.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBoxQRCode.TabIndex = 17;
+            this.pictureBoxQRCode.TabStop = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(641, 364);
+            this.ClientSize = new System.Drawing.Size(636, 361);
+            this.Controls.Add(this.pictureBoxQRCode);
             this.Controls.Add(this.btnConvert);
             this.Controls.Add(this.button2);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btnExport);
             this.Controls.Add(this.lblTitle);
             this.Controls.Add(this.txtTitle);
             this.Controls.Add(this.lblAuthor);
@@ -241,14 +254,16 @@ namespace BookCollectionApp
             this.Name = "Form1";
             this.Text = "Book Collection Manager";
             ((System.ComponentModel.ISupportInitialize)(this.dataGridBooks)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQRCode)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
         }
 
-        private Button button1;
+        private Button btnExport;
         private Button button2;
         private Button btnConvert;
+        private PictureBox pictureBoxQRCode;
     }
 }
 

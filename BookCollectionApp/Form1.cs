@@ -19,43 +19,132 @@ namespace BookCollectionApp
     public partial class Form1 : Form
     {
 
-        
+        private DatabaseManager _databaseManager;
+        private BookManager _bookManager;
+        private QRCodeGeneratorHelper _qrCodeGeneratorHelper;
+        private readonly string _userRole;
 
-        // Создание экземпляра менеджера книг для управления коллекцией книг.
-        private BookManager bookManager = new BookManager();
-        private string connectionString = BookManager.connectionString;
 
         // Создание источника данных для связывания данных с элементами управления (например, DataGridView).
         private BindingSource bindingSource = new BindingSource();
 
-        // Конструктор формы, который выполняет инициализацию компонентов и связывает DataGridView с BindingSource.
-        public Form1()
+        public Form1(string userRole)
         {
             InitializeComponent();  // Инициализация компонентов формы (автоматически генерируемый код)
-
+            _userRole = userRole;
+            ConfigureAccessByRole();
+            _databaseManager = new DatabaseManager();
+            _bookManager = new BookManager(_databaseManager);
 
             // Устанавливаем BindingSource в качестве источника данных для DataGridView.
             dataGridBooks.DataSource = bindingSource;
 
             // Автоматически генерировать столбцы в DataGridView на основе свойств объекта книги.
             dataGridBooks.AutoGenerateColumns = true;
-
         }
-        // Загрузка списка книг из базы данных
-        private void LoadBooks()
+        private void AdjustWindowForQRCode(Bitmap qrCodeImage)
         {
-            string query = "SELECT id, title, author, year FROM books";
+            // Рассчитываем ширину окна
+            int qrCodeWidth = qrCodeImage.Width; // Ширина QR-кода
+            int padding = 20; // Отступы
 
-            using (var connection = new NpgsqlConnection(connectionString))
+            // Рассчитываем необходимую ширину формы
+            int formBorderWidth = this.Width - this.ClientSize.Width; // Разница между полной шириной и клиентской областью
+            int newFormWidth = 650 + qrCodeWidth + padding;
+
+            // Если текущая ширина меньше необходимой, увеличиваем
+            if (this.Width < newFormWidth | this.Width > newFormWidth)
             {
-                connection.Open();
-                using (var command = new NpgsqlCommand(query, connection))
-                using (var reader = command.ExecuteReader())
+                this.Width = newFormWidth;
+            }
+
+            // Размещаем QR-код
+            pictureBoxQRCode.Location = new System.Drawing.Point(this.ClientSize.Width - qrCodeImage.Width - padding, 10);
+            pictureBoxQRCode.Size = qrCodeImage.Size;
+
+            // Обновляем окно
+            this.PerformLayout();
+            this.Update();
+        }
+        private void btnGenerateQRCode_Click(object sender, EventArgs e)
+        {
+            if (dataGridBooks.SelectedRows.Count > 0)
+            {
+                // Получаем выбранную книгу
+                var selectedRow = dataGridBooks.SelectedRows[0];
+                Book selectedBook = new Book
                 {
-                    DataTable dt = new DataTable();
-                    dt.Load(reader);
-                    dataGridBooks.DataSource = dt;
+                    Title = selectedRow.Cells["Title"].Value.ToString(),
+                    Author = selectedRow.Cells["Author"].Value.ToString(),
+                    Year = Convert.ToInt32(selectedRow.Cells["Year"].Value)
+                };
+
+                try
+                {
+                    // Генерация URL и QR-кода
+                    _qrCodeGeneratorHelper = new QRCodeGeneratorHelper();
+                    string searchUrl = _qrCodeGeneratorHelper.GenerateSearchUrl(selectedBook);
+                    Bitmap qrCodeImage = QRCodeGeneratorHelper.GenerateQRCode(searchUrl);
+
+                    // Подстраиваем ширину окна
+                    AdjustWindowForQRCode(qrCodeImage);
+                    // Отображение QR-кода в PictureBox
+                    pictureBoxQRCode.Image = qrCodeImage;
+                   
+
+                    MessageBox.Show("QR-код успешно сгенерирован!");
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при генерации QR-кода: {ex.Message}");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Выберите книгу из списка.");
+            }
+        }
+
+        private void ConfigureAccessByRole()
+        {
+            // Отключаем или скрываем элементы интерфейса в зависимости от роли
+            if (_userRole == "Admin")
+            {
+                btnImport.Enabled = true;
+                btnExport.Enabled = true;
+                btnConvert.Enabled = true;
+            }
+            else if (_userRole == "User")
+            {
+                btnImport.Enabled = false;
+                btnExport.Enabled = false;
+                btnConvert.Enabled = false;
+            }
+        }
+        private void UpdateBooks()
+        {
+            try
+            {
+                // Получаем список книг через BookManager.
+                List<Book> books = _bookManager.LoadBooks();
+
+                // Преобразуем список книг в формат, пригодный для DataGridView.
+                var bindingList = new BindingList<Book>(books);
+                var bindingSource = new BindingSource(bindingList, null);
+
+                // Привязываем BindingSource к DataGridView.
+                dataGridBooks.DataSource = bindingSource;
+
+                // Настраиваем отображение колонок.
+                dataGridBooks.Columns["FileData"].Visible = false; // Скрыть поле FileData, если оно не нужно.
+                dataGridBooks.Columns["Id"].HeaderText = "ID";
+                dataGridBooks.Columns["Title"].HeaderText = "Название";
+                dataGridBooks.Columns["Author"].HeaderText = "Автор";
+                dataGridBooks.Columns["Year"].HeaderText = "Год";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при обновлении списка книг: {ex.Message}");
             }
         }
 
@@ -70,7 +159,6 @@ namespace BookCollectionApp
             string author = txtAuthor.Text;
 
 
-            // Проверка, является ли введенное значение года допустимым числом.
             if (int.TryParse(txtYear.Text, out int year))
             {
                 // Открытие диалога выбора файла
@@ -81,34 +169,32 @@ namespace BookCollectionApp
                     {
                         // Получаем путь к выбранному файлу
                         string filePath = openFileDialog.FileName;
-                        // Чтение файла в массив байтов
-                        byte[] fileBytes = File.ReadAllBytes(filePath);
 
-                        Guid bookId = Guid.NewGuid();  // Генерация нового GUID для книги
-
-                        string query = "INSERT INTO books (id, title, author, year, file_data) VALUES (@id, @title, @author, @year, @file_data)";
-                        using (var connection = new NpgsqlConnection(connectionString))
+                        try
                         {
-                            connection.Open();
-                            using (var command = new NpgsqlCommand(query, connection))
+                            Book newBook = new Book
                             {
-                                command.Parameters.AddWithValue("id", bookId);
-                                command.Parameters.AddWithValue("title", title);
-                                command.Parameters.AddWithValue("author", author);
-                                command.Parameters.AddWithValue("year", year);
-                                command.Parameters.AddWithValue("file_data", fileBytes);
-                                command.ExecuteNonQuery();
-                            }
-                        }
+                                Id = Guid.NewGuid(),  // Генерация уникального идентификатора для книги
+                                Title = title,
+                                Author = author,
+                                Year = year,
+                                FileData = File.ReadAllBytes(filePath)  // Чтение файла в массив байтов
+                            };
+                            // Добавление книги
+                            _bookManager.AddBook(newBook);
 
-                        MessageBox.Show("Книга добавлена!");
-                        LoadBooks();  // Обновляем список книг
+                            MessageBox.Show("Книга добавлена!");
+                            UpdateBooks(); // Обновляем список книг
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Ошибка при добавлении книги: {ex.Message}");
+                        }
                     }
                 }
             }
             else
             {
-                // Если год некорректный, показать сообщение об ошибке
                 MessageBox.Show("Введен некорректный год.");
             }
         }
@@ -120,25 +206,22 @@ namespace BookCollectionApp
             if (dataGridBooks.SelectedRows.Count > 0)
             {
                 var selectedRow = dataGridBooks.SelectedRows[0];
-                Guid bookId = (Guid)selectedRow.Cells["id"].Value;
 
-                // Отладочное сообщение
-                //MessageBox.Show($"ID выбранной книги: {bookId}");
-
-                string query = "DELETE FROM books WHERE id = @id";
-
-                using (var connection = new NpgsqlConnection(connectionString))
+                // Получение данных о книге из выбранной строки.
+                Book selectedBook = new Book
                 {
-                    connection.Open();
-                    using (var command = new NpgsqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("id", bookId);
-                        command.ExecuteNonQuery();
-                    }
-                }
+                    Id = (Guid)selectedRow.Cells["id"].Value,
+                    Title = selectedRow.Cells["title"].Value.ToString(),
+                    Author = selectedRow.Cells["author"].Value.ToString(),
+                    Year = (int)selectedRow.Cells["year"].Value,
+                    // Поле FileData оставляем пустым, так как оно не используется при удалении.
+                };
+
+                // Удаление книги через BookManager.
+                _bookManager.RemoveBook(selectedBook);
 
                 MessageBox.Show("Книга удалена!");
-                LoadBooks();  // Обновляем список книг
+                UpdateBooks(); // Обновляем список книг
             }
             else
             {
@@ -152,52 +235,29 @@ namespace BookCollectionApp
         {
             string title = txtTitle.Text;
 
-            string query = "SELECT id, title, author, year FROM books WHERE title ILIKE @title";
+            // Получаем список книг
+            List<Book> books = _bookManager.GetBooksByTitle(title);
 
-            using (var connection = new NpgsqlConnection(connectionString))
-            {
-                connection.Open();
-                using (var command = new NpgsqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("title", "%" + title + "%");
-                    using (var reader = command.ExecuteReader())
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(reader);
-                        dataGridBooks.DataSource = dt;
-                    }
-                }
-            }
+            // Привязываем список книг к DataGridView
+            dataGridBooks.DataSource = books;
         }
 
-        // Обработчик события для поиска книги по автору.
         private void btnSearchByAuthor_Click(object sender, EventArgs e)
         {
             string author = txtAuthor.Text;
 
-            string query = "SELECT id, title, author, year FROM books WHERE author ILIKE @author";
+            // Получаем список книг
+            List<Book> books = _bookManager.GetBooksByAuthor(author);
 
-            using (var connection = new NpgsqlConnection(connectionString))
-            {
-                connection.Open();
-                using (var command = new NpgsqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("author", "%" + author + "%");
-                    using (var reader = command.ExecuteReader())
-                    {
-                        DataTable dt = new DataTable();
-                        dt.Load(reader);
-                        dataGridBooks.DataSource = dt;
-                    }
-                }
-            }
+            // Привязываем список книг к DataGridView
+            dataGridBooks.DataSource = books;
         }
 
         // Обработчик события для отображения всех книг.
         private void btnShowAllBooks_Click(object sender, EventArgs e)
         {
             // Отображение всех книг в DataGridView.
-            LoadBooks();  // Перезагружаем список всех книг
+            UpdateBooks();  // Перезагружаем список всех книг
         }
 
 
@@ -211,89 +271,76 @@ namespace BookCollectionApp
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                // Чтение содержимого файла
-                string json = File.ReadAllText(openFileDialog.FileName);
-
-                // Десериализация JSON в список книг
-                List<Book> books = JsonConvert.DeserializeObject<List<Book>>(json);
-
-                // Вставка данных в базу данных
-                string query = "INSERT INTO books (id, title, author, year, file_data) VALUES (@id, @title, @author, @year, @file_data)";
-
-                using (var connection = new NpgsqlConnection(connectionString))
+                try
                 {
-                    connection.Open();
-                    using (var transaction = connection.BeginTransaction())
+                    // Чтение содержимого файла
+                    string json = File.ReadAllText(openFileDialog.FileName);
+
+                    // Десериализация JSON в список книг
+                    List<Book> books = JsonConvert.DeserializeObject<List<Book>>(json);
+
+                    if (books != null && books.Count > 0)
                     {
                         foreach (var book in books)
                         {
-                            // Вставка данных книги в базу
-                            using (var command = new NpgsqlCommand(query, connection))
+                            // Проверяем, существует ли книга с таким `id`
+                            if (_bookManager.BookExists(book.Id))
                             {
-                                command.Parameters.AddWithValue("id", book.Id);
-                                command.Parameters.AddWithValue("title", book.Title);
-                                command.Parameters.AddWithValue("author", book.Author);
-                                command.Parameters.AddWithValue("year", book.Year);
-
-                                // Вставка бинарных данных файла (не Base64 строка)
-                                command.Parameters.AddWithValue("file_data", book.FileData);  // Прямо передаем массив байтов
-                                command.ExecuteNonQuery();
+                                // Генерируем новый `id`, если книга с таким уже есть
+                                book.Id = Guid.NewGuid();
                             }
+
+                            // Добавляем книгу
+                            _bookManager.AddBook(book);
                         }
 
-                        // Подтверждаем транзакцию
-                        transaction.Commit();
+                        MessageBox.Show("Книги успешно импортированы из JSON!");
+                        UpdateBooks(); // Обновляем список книг
+                    }
+                    else
+                    {
+                        MessageBox.Show("Файл JSON не содержит книг или данные некорректны.");
                     }
                 }
-
-                MessageBox.Show("Книги импортированы из JSON!");
-                LoadBooks();  // Обновляем список книг
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при импорте книг: {ex.Message}");
+                }
             }
         }
+
 
         // Кнопка для экспорта книг в файл (JSON) Filter = "JSON Files (*.json)|*.json"
         private void btnExportBooks_Click(object sender, EventArgs e)
         {
-            // Извлекаем список всех книг из базы данных
-            List<Book> books = new List<Book>();
-
-            string query = "SELECT id, title, author, year, file_data FROM books";
-
-            using (var connection = new NpgsqlConnection(connectionString))
+            try
             {
-                connection.Open();
-                using (var command = new NpgsqlCommand(query, connection))
+                // Извлекаем список всех книг через BookManager
+                List<Book> books = _bookManager.LoadBooks();
+
+                if (books.Count == 0)
                 {
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            Book book = new Book
-                            {
-                                Id = reader.GetGuid(0),
-                                Title = reader.GetString(1),
-                                Author = reader.GetString(2),
-                                Year = reader.GetInt32(3),
-                                FileData = reader["file_data"] as byte[] // Получаем файл как массив байтов
-                            };
-                            books.Add(book);
-                        }
-                    }
+                    MessageBox.Show("В базе данных нет книг для экспорта.");
+                    return;
+                }
+
+                // Окно сохранения файла
+                SaveFileDialog saveFileDialog = new SaveFileDialog();
+                saveFileDialog.Filter = "JSON Files (*.json)|*.json";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    // Сериализация списка книг в JSON
+                    string json = JsonConvert.SerializeObject(books, Formatting.Indented);
+
+                    // Сохранение JSON в файл
+                    File.WriteAllText(saveFileDialog.FileName, json);
+                    MessageBox.Show("Список книг успешно экспортирован в JSON!");
                 }
             }
-
-            // Окно сохранения файла
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "JSON Files (*.json)|*.json";
-
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            catch (Exception ex)
             {
-                // Сериализация списка книг в JSON
-                string json = JsonConvert.SerializeObject(books, Formatting.Indented);
-
-                // Сохранение JSON в файл
-                File.WriteAllText(saveFileDialog.FileName, json);
-                MessageBox.Show("Список книг экспортирован в JSON!");
+                MessageBox.Show($"Ошибка при экспорте книг: {ex.Message}");
             }
         }
 
@@ -305,8 +352,9 @@ namespace BookCollectionApp
                 var selectedRow = dataGridBooks.SelectedRows[0];
                 Guid bookId = (Guid)selectedRow.Cells["Id"].Value;
 
+                var bookManager = new BookManager();
                 // Извлекаем книгу из базы данных
-                Book selectedBook = bookManager.GetBookById(bookId);
+                Book selectedBook = _databaseManager.GetBookById(bookId);
 
                 if (selectedBook != null)
                 {
